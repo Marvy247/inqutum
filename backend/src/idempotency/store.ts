@@ -24,7 +24,8 @@ export type IdempotencyDecision =
   | { kind: 'replay'; response: StoredResponse }
   | { kind: 'in_progress' }
   | { kind: 'conflict' }
-  | { kind: 'expired' };
+  | { kind: 'expired' }
+  | { kind: 'stale' };
 
 export interface IdempotencyStore {
   /**
@@ -42,5 +43,12 @@ export interface IdempotencyStore {
    * Releases an in-progress lock on failure so subsequent retries can proceed.
    */
   release(scope: string, key: string): Promise<void>;
+
+  /**
+   * Marks a key as stale so it can be refreshed/reprocessed.
+   * Useful for recovery when a previously in-progress operation needs to be
+   * re-attempted after a system restart or reset.
+   */
+  markStale(scope: string, key: string): Promise<void>;
 }
 

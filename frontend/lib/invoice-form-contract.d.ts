@@ -30,6 +30,13 @@ export type CreateInvoiceValidationResult =
   | CreateInvoiceValidationSuccess
   | CreateInvoiceValidationFailure;
 
+export interface InvoiceSubmitErrorClassification {
+  code: string;
+  message: string;
+  retryable: boolean;
+  degraded: boolean;
+}
+
 export function validateCreateInvoiceInput(
   values: {
     amount: string | number;
@@ -44,3 +51,8 @@ export function validateCreateInvoiceInput(
   },
   userWallet: string | null | undefined
 ): CreateInvoiceValidationResult;
+
+export function classifyInvoiceSubmitError(
+  error: unknown,
+  fallbackMessage?: string
+): InvoiceSubmitErrorClassification;

@@ -109,6 +109,40 @@ function validateCreateInvoiceInput(values, userWallet) {
   };
 }
 
+/**
+ * Classifies a failed invoice-creation request so the form can offer a safe
+ * retry path and can tell degraded-dependency failures from validation errors.
+ *
+ * @param {any} error
+ * @param {string} [fallbackMessage='Failed to create invoice']
+ * @returns {{
+ *   code: string;
+ *   message: string;
+ *   retryable: boolean;
+ *   degraded: boolean;
+ * }}
+ */
+function classifyInvoiceSubmitError(error, fallbackMessage = 'Failed to create invoice') {
+  const degraded =
+    error?.code === 'API_UNREACHABLE' || error?.name === 'ApiUnavailableError';
+  const retryable = degraded || error?.retryable === true;
+
+  const code =
+    typeof error?.code === 'string' && error.code.trim()
+      ? error.code.trim()
+      : degraded
+      ? 'API_UNREACHABLE'
+      : 'API_REQUEST_FAILED';
+
+  const message =
+    typeof error?.message === 'string' && error.message.trim()
+      ? error.message.trim()
+      : fallbackMessage;
+
+  return { code, message, retryable, degraded };
+}
+
 module.exports = {
   validateCreateInvoiceInput,
+  classifyInvoiceSubmitError,
 };
