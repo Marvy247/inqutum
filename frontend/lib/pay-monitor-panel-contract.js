@@ -130,5 +130,44 @@ module.exports = {
   MAX_POLL_INTERVAL_MS,
   normalizeIntervalMs,
   resolvePayMonitorViewModel,
+  validateMonitorStatus,
+  formatMonitorInterval,
 };
+
+/**
+ * Validates a status string and returns the normalized MonitorStatus.
+ *
+ * Time Complexity:  O(1)
+ * Space Complexity: O(1)
+ *
+ * @param {string} status
+ * @returns {MonitorStatus}
+ */
+function validateMonitorStatus(status) {
+  const lower = (status || '').toLowerCase().trim();
+  const validStatuses = ['listening', 'paused', 'reconnecting', 'degraded', 'error'];
+  if (validStatuses.includes(lower)) {
+    return lower as MonitorStatus;
+  }
+  return 'paused';
+}
+
+/**
+ * Formats a polling interval in milliseconds to a human-readable string.
+ *
+ * Time Complexity:  O(1)
+ * Space Complexity: O(1)
+ *
+ * @param {number} intervalMs
+ * @returns {string}
+ */
+function formatMonitorInterval(intervalMs) {
+  const seconds = Math.round(intervalMs / 1000);
+  if (seconds >= 3600) {
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    return `${hours}h ${mins}m`;
+  }
+  return `${seconds}s`;
+}
 

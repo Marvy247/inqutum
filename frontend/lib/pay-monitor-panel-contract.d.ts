@@ -18,9 +18,10 @@ export interface PayMonitorViewModel {
   isDegraded: boolean;
   hasError: boolean;
   retryable: boolean;
-}
-
-export function normalizeIntervalMs(intervalMs: any, defaultIntervalMs?: number): number;
-
+}export function normalizeIntervalMs(intervalMs: any, defaultIntervalMs?: number): number;
 export function resolvePayMonitorViewModel(props?: PayMonitorPanelProps | null): PayMonitorViewModel;
+
+export function validateMonitorStatus(status: string): MonitorStatus;
+export function formatMonitorInterval(intervalMs: number): string;
+
 

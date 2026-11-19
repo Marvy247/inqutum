@@ -120,6 +120,22 @@ export class MemoryIdempotencyStore implements IdempotencyStore {
   }
 
   /**
+   * Marks a key as stale so it can be refreshed/reprocessed.
+   * Useful for recovery when a previously in-progress operation needs to be
+   * re-attempted after a system restart or reset.
+   *
+   * Time Complexity:  O(1)
+   * Space Complexity: O(1)
+   */
+  async markStale(scope: string, key: string): Promise<void> {
+    const ck = this.compositeKey(scope, key);
+    const record = this.records.get(ck);
+    if (record && record.state === 'in_progress') {
+      record.state = 'stale';
+    }
+  }
+
+  /**
    * Helper to inspect internal count in tests.
    */
   size(): number {

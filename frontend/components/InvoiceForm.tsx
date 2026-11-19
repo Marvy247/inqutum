@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { apiErrorMessage, invoiceApi, isApiUnavailableError } from '@/lib/api';
+import { invoiceApi } from '@/lib/api';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { STELLAR_ASSETS, getAssetByCode } from '@/lib/assets';
@@ -13,7 +13,10 @@ import {
   type InvoiceFormErrors,
   type InvoiceFormField,
 } from '@/lib/invoice-form-validation';
-import { validateCreateInvoiceInput } from '@/lib/invoice-form-contract';
+import {
+  classifyInvoiceSubmitError,
+  validateCreateInvoiceInput,
+} from '@/lib/invoice-form-contract';
 
 const FIELD_IDS: Record<InvoiceFormField, string> = {
   amount: 'invoice-amount',
@@ -107,9 +110,9 @@ export default function InvoiceForm({ onSuccess, userWallet }: InvoiceFormProps)
       setExpiresInDays(7);
       setErrors({});
     } catch (error: any) {
-      const message = apiErrorMessage(error, 'Failed to create invoice');
-      if (isApiUnavailableError(error)) setApiError(message);
-      toast.error(message);
+      const classified = classifyInvoiceSubmitError(error);
+      if (classified.degraded) setApiError(classified.message);
+      toast.error(classified.message);
     } finally {
       setLoading(false);
     }

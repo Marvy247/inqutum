@@ -1,6 +1,9 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { validateCreateInvoiceInput } = require('../lib/invoice-form-contract');
+const {
+  validateCreateInvoiceInput,
+  classifyInvoiceSubmitError,
+} = require('../lib/invoice-form-contract');
 
 const validWallet = 'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5';
 const validForm = {
@@ -120,5 +123,53 @@ test('defaults assetCode to XLM and days to 7 when omitted', () => {
   if (res.ok) {
     assert.equal(res.payload.assetCode, 'XLM');
     assert.equal(res.payload.expiresInDays, 7);
+  }
+});
+
+// Issue #161: InvoiceForm degraded-dependency and retry contract.
+test('Issue #161: classifies an unreachable API as a degraded, retryable failure', () => {
+  const error = Object.assign(new Error('Quittance API is unreachable.'), {
+    name: 'ApiUnavailableError',
+    code: 'API_UNREACHABLE',
+  });
+  const classified = classifyInvoiceSubmitError(error);
+
+  assert.equal(classified.degraded, true);
+  assert.equal(classified.retryable, true);
+  assert.equal(classified.code, 'API_UNREACHABLE');
+  assert.equal(classified.message, 'Quittance API is unreachable.');
+});
+
+test('Issue #161: keeps server-flagged retryable request errors retryable without marking them degraded', () => {
+  const error = Object.assign(new Error('Rate limited'), {
+    code: 'RATE_LIMITED',
+    retryable: true,
+  });
+  const classified = classifyInvoiceSubmitError(error);
+
+  assert.equal(classified.degraded, false);
+  assert.equal(classified.retryable, true);
+  assert.equal(classified.code, 'RATE_LIMITED');
+});
+
+test('Issue #161: does not advertise a retry for non-retryable validation failures', () => {
+  const error = Object.assign(new Error('Invoice validation failed'), {
+    code: 'VALIDATION_FAILED',
+    retryable: false,
+  });
+  const classified = classifyInvoiceSubmitError(error);
+
+  assert.equal(classified.degraded, false);
+  assert.equal(classified.retryable, false);
+  assert.equal(classified.code, 'VALIDATION_FAILED');
+});
+
+test('Issue #161: falls back to a stable code and message for unknown failures', () => {
+  for (const error of [undefined, null, {}, 'boom']) {
+    const classified = classifyInvoiceSubmitError(error, 'Failed to create invoice');
+    assert.equal(classified.code, 'API_REQUEST_FAILED');
+    assert.equal(classified.degraded, false);
+    assert.equal(classified.retryable, false);
+    assert.equal(classified.message, 'Failed to create invoice');
   }
 });
